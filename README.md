@@ -1,6 +1,6 @@
 # ACVLab AFE-AIMI-COVID19-Challenge-2025
 
-This repository is the code of our lab [ACVLAB]used in AFE-AIMI-COVID19-Challenge-2025 (https://ai-medical-image-analysis.github.io/5th/#features).
+This repository is the code of our lab [ACVLAB] used in AFE-AIMI-COVID19-Challenge-2025 (https://ai-medical-image-analysis.github.io/5th/#features).
 We provide all the processed files and necessary codes in this repository.
 
 

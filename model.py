@@ -1,22 +1,31 @@
 import torch.nn as nn, torch.nn.functional as F
 import timm
 import torch
-from timm.models.efficientnet import efficientnet_b3a
-
 
 
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
 
-        #to do
-        #e = tf_efficientnet_b4_ns()
-        e = efficientnet_b3a(pretrained=True, drop_rate=0.3, drop_path_rate=0.2)
+        # 使用 timm 創建模型，更穩定
+        e = timm.create_model('efficientnet_b3a', pretrained=True, drop_rate=0.3, drop_path_rate=0.2)
+        
+        # 檢查並獲取正確的activation層
+        # 新版本可能叫 activation 而不是 act1
+        try:
+            act1 = e.act1
+        except AttributeError:
+            act1 = getattr(e, 'activation', nn.SiLU())  # 備用activation
+            
+        try:
+            act2 = e.act2
+        except AttributeError:
+            act2 = getattr(e, 'activation', nn.SiLU())  # 備用activation
         
         self.b0 = nn.Sequential(
             e.conv_stem,
             e.bn1,
-            e.act1,
+            act1,
         )
         self.b1 = e.blocks[0]
         self.b2 = e.blocks[1]
@@ -28,13 +37,11 @@ class Net(nn.Module):
         self.b8 = nn.Sequential(
             e.conv_head, #384, 1536
             e.bn2,
-            e.act2,
+            act2,
         )
 
-        
-        
-        self.emb = nn.Linear(1536,224)
-        self.logit = nn.Linear(224,1)
+        self.emb = nn.Linear(1536, 224)
+        self.logit = nn.Linear(224, 1)
         
 
     def forward(self, image):
@@ -50,15 +57,12 @@ class Net(nn.Module):
         x = self.b6(x) 
         x = self.b7(x) 
         x = self.b8(x)
-        x = F.adaptive_avg_pool2d(x,1).reshape(batch_size,-1)
+        x = F.adaptive_avg_pool2d(x, 1).reshape(batch_size, -1)
 
         x = self.emb(x)
         logit = self.logit(x)
      
         return logit
-
-
-
 
 
 def criterion(outputs, labels, gpu=None, pos_weight=None):

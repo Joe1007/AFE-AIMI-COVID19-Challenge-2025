@@ -27,9 +27,12 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 #from imblearn.metrics import specificity_score
 from sklearn.metrics import recall_score
 
+# 添加matplotlib用於繪圖
+import matplotlib.pyplot as plt
+
 from utils import *
 from model import *
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3,4"
 
 def set_seed(seed=42):
     '''Sets the seed of the entire notebook so results are the same every time we run.
@@ -95,6 +98,81 @@ def train_one_epoch(model, optimizer, scheduler, dataloader, device, epoch):
 
     return epoch_loss
 
+def load_best_model(model, bin_save_path, job_name, fold_num):
+    """載入該fold的最佳模型"""
+    
+    best_model_path = None
+    best_score = 0
+    best_metric = None
+    
+    search_order = [
+        ('f1', 'max'),      
+        ('auc_roc', 'max'), 
+        ('loss', 'min')     
+    ]
+    
+    for metric, direction in search_order:
+        metric_dir = os.path.join(bin_save_path, metric)
+        if not os.path.exists(metric_dir):
+            continue
+            
+        model_files = [f for f in os.listdir(metric_dir) 
+                      if f'fold{fold_num}' in f and f.endswith('.bin')]
+        
+        if not model_files:
+            continue
+            
+        for model_file in model_files:
+            try:
+                score_str = model_file.split('.bin')[-1]
+                if score_str:
+                    score = float(score_str)
+                    
+                    is_better = False
+                    if direction == 'max' and score > best_score:
+                        is_better = True
+                    elif direction == 'min' and (best_score == 0 or score < best_score):
+                        is_better = True
+                    
+                    if is_better:
+                        best_score = score
+                        best_model_path = os.path.join(metric_dir, model_file)
+                        best_metric = metric
+                        
+            except (ValueError, IndexError):
+                continue
+        
+        if best_model_path:
+            break
+    
+    if best_model_path and os.path.exists(best_model_path):
+        print(f"載入最佳模型: {best_model_path}")
+        print(f"最佳{best_metric}: {best_score}")
+        
+        try:
+            checkpoint = torch.load(best_model_path, map_location='cpu')
+            
+            if isinstance(checkpoint, dict):
+                sample_key = next(iter(checkpoint.keys()))
+                if sample_key.startswith('module.'):
+                    model.load_state_dict(checkpoint)
+                else:
+                    new_checkpoint = {'module.' + k: v for k, v in checkpoint.items()}
+                    model.load_state_dict(new_checkpoint)
+            else:
+                print("警告：checkpoint格式不正確")
+                return False
+                
+            print("模型載入成功")
+            return True
+            
+        except Exception as e:
+            print(f"載入模型時發生錯誤: {e}")
+            return False
+    else:
+        print(f"未找到fold {fold_num}的最佳模型")
+        return False
+
 @torch.inference_mode()
 def valid_one_epoch(model, dataloader, device, epoch):
     model.eval()
@@ -157,6 +235,49 @@ def valid_one_epoch(model, dataloader, device, epoch):
 
 
     return epoch_loss,acc_f1,auc_roc
+
+def plot_loss_curve(history, fold_num, save_path):
+    """繪製並保存loss curve"""
+    plt.figure(figsize=(12, 5))
+    
+    # Plot Loss
+    plt.subplot(1, 2, 1)
+    plt.plot(history['Train Loss'], label='Train Loss', marker='o')
+    plt.plot(history['Valid Loss'], label='Valid Loss', marker='s')
+    plt.title(f'Loss Curve - Fold {fold_num}')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    
+    # Plot Learning Rate if available
+    plt.subplot(1, 2, 2)
+    if 'Learning Rate' in history:
+        plt.plot(history['Learning Rate'], label='Learning Rate', marker='d')
+        plt.title(f'Learning Rate - Fold {fold_num}')
+        plt.xlabel('Epoch')
+        plt.ylabel('Learning Rate')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+    else:
+        # If no LR history, plot train vs valid loss comparison
+        epochs = range(1, len(history['Train Loss']) + 1)
+        plt.plot(epochs, history['Train Loss'], 'b-', label='Train Loss')
+        plt.plot(epochs, history['Valid Loss'], 'r-', label='Valid Loss')
+        plt.title(f'Train vs Valid Loss - Fold {fold_num}')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    
+    # Save the plot
+    plot_save_path = os.path.join(save_path, 'loss_curves')
+    os.makedirs(plot_save_path, exist_ok=True)
+    plt.savefig(os.path.join(plot_save_path, f'loss_curve_fold_{fold_num}.png'), dpi=300, bbox_inches='tight')
+    plt.show()
+    plt.close()
 
 def run_training(model, optimizer, scheduler, device, num_epochs):
         
@@ -287,12 +408,12 @@ if __name__ == '__main__':
     # Config
     set_seed()
     job=60
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "3,4"
     CONFIG = {"seed": 2022,
             "epochs": 3,  #24
-            "img_size": 384, #512
+            "img_size": 256, #512, 384
 
-            "train_batch_size": 20, #16
+            "train_batch_size": 16, #16, 20
             "valid_batch_size": 1,
             "learning_rate": 0.0001,
 
@@ -301,7 +422,7 @@ if __name__ == '__main__':
             "n_accumulate": 1, #2
             "device": torch.device("cuda" if torch.cuda.is_available() else "cpu"),
             
-            "train_batch":8,
+            "train_batch":8, #8
             }
     # img size = 256; batch=8; f1-score mean: 0.9142
     # Data Augmenation
@@ -338,11 +459,11 @@ if __name__ == '__main__':
     # Get data dict
     #with open('/ssd2/ming/2024COVID/filter_slice_train_dic1_05_challenge.pickle', 'rb') as f:
     #    train_dic = pickle.load(f)
-    with open('/ssd2/ming/2024COVID/kde_train_dic_challenge.pickle', 'rb') as f:
+    with open('/ssd7/ICCV2025_COVID19/processing_by_hospital_0/kde_train_dic_challenge.pickle', 'rb') as f:
          train_dic = pickle.load(f)
     #train_dic = {key.replace('train_pure_crop_challenge', 'train'): value for key, value in train_dic.items()}
 
-    with open('/ssd2/ming/2024COVID/kde_valid_dic_challenge.pickle', 'rb') as f:
+    with open('/ssd7/ICCV2025_COVID19/processing_by_hospital_0/kde_valid_dic_challenge.pickle', 'rb') as f:
         valid_dlc = pickle.load(f)
     
     #valid_dlc = {key.replace('valid_pure_crop_challenge', 'valid'): value for key, value in valid_dlc.items()}
@@ -350,18 +471,18 @@ if __name__ == '__main__':
 
     #with open('ssd8/2023COVID19/Train_Valid_dataset/test_dic1_05.pickle', 'rb') as f:
     #    test_dlc = pickle.load(f)
-    not_allow=['/ssd2/ming/2024COVID/train_pure_crop_challenge/negative/ct_scan_292','/ssd2/ming/2024COVID/train_pure_crop_challenge/negative/ct_scan_354',
-                '/ssd2/ming/2024COVID/train_pure_crop_challenge/negative/ct_scan_449', '/ssd2/ming/2024COVID/train_pure_crop_challenge/negative/ct_scan_538',
-                '/ssd2/ming/2024COVID/train_pure_crop_challenge/positive/ct_scan_107','/ssd2/ming/2024COVID/train_pure_crop_challenge/positive/ct_scan_306',
-                '/ssd2/ming/2024COVID/train_pure_crop_challenge/positive/ct_scan_31','/ssd2/ming/2024COVID/train_pure_crop_challenge/positive/ct_scan_47',
-                '/ssd2/ming/2024COVID/train_pure_crop_challenge/positive/ct_scan_64','/ssd2/ming/2024COVID/valid_pure_crop_challenge/negative/ct_scan_101',
-                '/ssd2/ming/2024COVID/valid_pure_crop_challenge/negative/ct_scan_130','/ssd2/ming/2024COVID/valid_pure_crop_challenge/negative/ct_scan_15',
-                '/ssd2/ming/2024COVID/valid_pure_crop_challenge/positive/ct_scan_101','/ssd2/ming/2024COVID/valid_pure_crop_challenge/positive/ct_scan_18',
-                '/ssd2/ming/2024COVID/valid_pure_crop_challenge/positive/ct_scan_40','/ssd2/ming/2024COVID/valid_pure_crop_challenge/positive/ct_scan_46',
-                '/ssd2/ming/2024COVID/valid_pure_crop_challenge/positive/ct_scan_48','/ssd2/ming/2024COVID/valid_pure_crop_challenge/positive/ct_scan_60']
-    train_df = pd.read_csv('/ssd2/ming/2024COVID/filter_slice_train_df_challenge.csv')
+    not_allow=['/ssd7/ICCV2025_COVID19/track1_by_hospital/hospital_0/train_pure_crop_challenge/covid/ct_scan_106',
+               '/ssd7/ICCV2025_COVID19/track1_by_hospital/hospital_0/train_pure_crop_challenge/covid/ct_scan_55',
+               '/ssd7/ICCV2025_COVID19/track1_by_hospital/hospital_0/train_pure_crop_challenge/covid/ct_scan_79',
+               '/ssd7/ICCV2025_COVID19/track1_by_hospital/hospital_0/train_pure_crop_challenge/non-covid/ct_scan_12',
+               '/ssd7/ICCV2025_COVID19/track1_by_hospital/hospital_0/train_pure_crop_challenge/non-covid/ct_scan_136',
+               '/ssd7/ICCV2025_COVID19/track1_by_hospital/hospital_0/train_pure_crop_challenge/non-covid/ct_scan_160',
+               '/ssd7/ICCV2025_COVID19/track1_by_hospital/hospital_0/train_pure_crop_challenge/non-covid/ct_scan_45',
+               '/ssd7/ICCV2025_COVID19/track1_by_hospital/hospital_0/train_pure_crop_challenge/non-covid/ct_scan_498']
+
+    train_df = pd.read_csv('/ssd7/ICCV2025_COVID19/processing_by_hospital_0/filter_slice_train_df_challenge.csv')
     train_df = train_df[~train_df['path'].isin(not_allow)]
-    valid_df = pd.read_csv('/ssd2/ming/2024COVID/filter_slice_valid_df_challenge.csv') 
+    valid_df = pd.read_csv('/ssd7/ICCV2025_COVID19/processing_by_hospital_0/filter_slice_valid_df_challenge.csv') 
     valid_df = valid_df[~valid_df['path'].isin(not_allow)]  
     #test_df = pd.read_csv('')
     
@@ -370,7 +491,7 @@ if __name__ == '__main__':
     #valid_df['path'] = valid_df['path'].str.replace('valid_pure_crop_challenge', 'valid')
 
     print(len(train_df),len(valid_df))
-    fold_df = pd.read_csv('/ssd2/ming/2024COVID/chih_full_replaced_df.csv')
+    fold_df = pd.read_csv('/ssd7/ICCV2025_COVID19/processing_by_hospital_0/chih_full_replaced_df.csv')
     fold_df = fold_df[~fold_df['path'].isin(not_allow)]  
     
     #fold_df['path'] = fold_df['path'].str.replace('train_pure_crop_challenge', 'train')
@@ -393,13 +514,13 @@ if __name__ == '__main__':
         print("Train: {} || Valid: {}".format(train_fold.shape, valid_fold.shape))
         
         train_loader, valid_loader = prepare_loaders(CONFIG, train_df, train_dic, valid_df, valid_dlc, data_transforms)
-        bin_save_path = "/ssd2/ming/2024COVID/model"
+        bin_save_path = "/ssd7/ICCV2025_COVID19/track1_hospital_0_model_test"
         job_name = f"job_{job}_effb7_size{CONFIG['img_size']}_challenge[DataParallel]-fold{i+1}"+".bin"
         
         print("="*10, "loading *model*", "="*10)
         #model=eca_nfnet_l0(n_classes=2,pretrained=True)
         model=Net()
-        model = nn.DataParallel(model, device_ids=[0])
+        model = nn.DataParallel(model, device_ids=[0,1])
         model = model.to(CONFIG['device'])
         scaler = amp.GradScaler()
         train_loader, valid_loader = prepare_loaders(CONFIG, train_fold, total_dic, valid_fold, total_dic, data_transforms)
@@ -415,18 +536,22 @@ if __name__ == '__main__':
                                 device=CONFIG['device'],
                                 num_epochs=CONFIG['epochs'])
       
-        
+        # 添加繪製loss curve的部分
+        print("="*10, "Plotting Loss Curve", "="*10)
+        plot_loss_curve(history, i+1, bin_save_path)
 
+        print("="*10, f"Fold {i+1} Training Complete", "="*10)
+        print(f"Best F1 Score: {best_epoch_f1:.4f}")
+        print("Moving to next fold...")
+        print("")
 
-        
-        # Modify the keys in the checkpoint dictionary
-        #new_checkpoint = {k.replace('model', 'module.model'): v for k, v in checkpoint.items()}
-        new_checkpoint = {'module.'+k: v for k, v in checkpoint.items()}
+        """
+        print("="*10, f"Loading Best Model for Fold {i+1}", "="*10)
+        model_loaded = load_best_model(model, bin_save_path, job_name, i+1)
 
-        # Load the modified state dictionary into the model
-        model.load_state_dict(new_checkpoint)
+        if not model_loaded:
+            print("使用當前訓練完成的模型進行預測")
 
-        # Move the model to CUDA if available
         model.to('cuda')
 
         #train_loader, valid_loader = prepare_loaders(CONFIG, train_df, train_dic, valid_df, valid_dlc, data_transforms)
@@ -443,4 +568,5 @@ if __name__ == '__main__':
             true_y, pred_y = pred_one(model, valid_loader, device=CONFIG['device'])
             #print(true_y.shape, pred_y.shape)
             #print(true_y, pred_y)
-            print(f1_score(np.array(true_y),np.round(pred_y),average='macro'))  
+            print(f1_score(np.array(true_y),np.round(pred_y),average='macro'))
+        """

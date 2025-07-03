@@ -54,29 +54,33 @@ precessing_test/
   ├── test_dic1_05_.pickle/
 ```
 
-## Quick Demo
-- Unzip the `preprocessing_test` folder, and put it in the path to fit your directory(you can reference the data structure we mention above)
-- Run `./preproceesing/inference/1-spatial removal.ipynb`, and the get `test_cropped` folder
-- Access the link(https://drive.google.com/drive/folders/1izXmN-rRdZIiSpaZsozlLbZxah7u8L0T?usp=sharing), and put .bin in `weights_path_list` in `inference.py`
-- Run `CUDA_VISIBLE_DEVICES=0,1 python inference.py`
-
-
-
 ## How To Train & Inference
+
+Train
+---
 - Run `./preproceesing/*` folder step by step (**Note: you need to change directory & path within all file.**)
 - Then run the command below:
+
 ```
 CUDA_VISIBLE_DEVICES=0,1 python train.py (for efficientNet)
 
 CUDA_VISIBLE_DEVICES=0,1 python train_swin.py (for swin_transformer)
 ```
 
+Inference
+---
 - Run `./preproceesing/inference/*` step by step (**Note:you need to change directory & path within all file.**)
 - Get and the weights(.bin) after training, and put it in `weights_path_list` in `inference.py`
 - Then run the command below:
 ```
 CUDA_VISIBLE_DEVICES=0,1 python inference.py
 ```
+
+Quick inference
+---
+- Unzip the `preprocessing_test` folder, and put it in the path to fit your directory(you can reference the data structure we mention above)
+- Run `./preproceesing/inference/1-spatial removal.ipynb`, and the get `test_cropped` folder
+- Access the link(https://drive.google.com/drive/folders/1izXmN-rRdZIiSpaZsozlLbZxah7u8L0T?usp=sharing), and put .bin in `weights_path_list` in `inference.py`
 
 ## Reminder
 - Note that the original data files are too large, we didn't put them into our repository.

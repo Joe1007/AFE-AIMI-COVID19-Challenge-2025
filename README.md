@@ -79,4 +79,4 @@ CUDA_VISIBLE_DEVICES=0,1 python inference.py
 ```
 
 ## Reminder
-- Note that the original data files are too large, we didn't put it into our repository.
+- Note that the original data files are too large, we didn't put them into our repository.

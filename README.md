@@ -2,7 +2,7 @@
 ### Installation
 ```
 Use the command as below:
--`git clone https://github.com/Joe1007/AFE-AIMI-COVID19-Challenge-2025.git`
+`git clone https://github.com/Joe1007/AFE-AIMI-COVID19-Challenge-2025.git`
 -`conda create --name e2d python=3.8 -y`
 -`conda activate e2d`
 # CUDA 11.6

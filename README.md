@@ -52,9 +52,6 @@ precessing_test/
   ├── filter_slice_test_dic1_05_.pickle/
   ├── test_area_df.csv/
   ├── test_dic1_05_.pickle/
-
-
-
 ```
 
 ## Quick Demo
@@ -80,3 +77,6 @@ CUDA_VISIBLE_DEVICES=0,1 python train_swin.py (for swin_transformer)
 ```
 CUDA_VISIBLE_DEVICES=0,1 python inference.py
 ```
+
+## Reminder
+- Note that the original data files are too large, we didn't put it into our repository.

@@ -21,9 +21,9 @@ For the format transformation problem(mac to window), you can conduct `./preproc
 track1/
 # Traingset
 ├── train/
-│   ├── annotations/          # CSV 檔案
+│   ├── annotations/          # CSV files
 │   ├── covid/
-│   │   ├── ct_scan_0/        # 包含 *.jpg
+│   │   ├── ct_scan_0/        # *.jpg
 │   │   ├── ct_scan_1/
 │   │   └── ...
 │   └── non-covid/
@@ -31,7 +31,7 @@ track1/
 │       ├── ct_scan_1/
 │       └── ...
 └── val/
-    ├── annotations/          # CSV 檔案
+    ├── annotations/          # CSV files
     ├── covid/
     │   ├── ct_scan_0/
     │   └── ...
@@ -41,14 +41,14 @@ track1/
 
 # Testingset
 test/
-  ├── ct_scan_0/        # 包含 *.jpg
+  ├── ct_scan_0/        # *.jpg
   ├── ct_scan_1/
   ├── ct_scan_2/
   └── ...
   ├── ct_scan_1487/
 
 precessing_test/
-  ├── filter_slice_test.csv/        # 包含 *.jpg
+  ├── filter_slice_test.csv/        
   ├── filter_slice_test_dic1_05_.pickle/
   ├── test_area_df.csv/
   ├── test_dic1_05_.pickle/
@@ -85,3 +85,31 @@ Quick Demo
 
 ## Reminder
 - Note that the original data files are too large, we didn't put them into our repository.
+
+## Copyright
+- Author: Chih-Chung Hsu
+e-mail: chihchung@nycu.edu.tw
+
+- Author: Chia-Ming Lee
+e-mail: zuw408421476@gmail.com
+
+- Author: Bo-Cheng Qiu
+e-mail: a36492183@gmail.com
+
+- Author: Ting-Yao Chen
+e-mail: xpple413208@gmail.com
+
+- Author: Ming-Han Sun
+e-mail: harris910815@gmail.com
+
+- Author: Jun-Lin Chen
+e-mail: u109029067@gmail.com
+
+- Author: Jung-Tse Tsai
+e-mail: jungtsetsai@gmail.com
+
+- Author: I-An Tsai
+e-mail: iantsai@gmail.com
+
+- Author: Yu-Fan Lin
+e-mail: aas12as12as12tw@gmail.com

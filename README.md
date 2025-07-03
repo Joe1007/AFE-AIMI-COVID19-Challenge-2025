@@ -9,14 +9,59 @@ pip install -r requirements.txt
 ```
 Then you can get the virtual enviroment and packages we use
 
+## Data Structure
+For the format transformation problem(mac to window), you can conduct `./preproceesing/0-data_setup.ipynb` & `./preproceesing/inference/1-spatial removal.ipynb` to get the `*_fixed` dataset (Not necessary)
+```
+track1/
+# Traingset
+├── train/
+│   ├── annotations/          # CSV 檔案
+│   ├── covid/
+│   │   ├── ct_scan_0/        # 包含 *.jpg
+│   │   ├── ct_scan_1/
+│   │   └── ...
+│   └── non-covid/
+│       ├── ct_scan_0/
+│       ├── ct_scan_1/
+│       └── ...
+└── val/
+    ├── annotations/          # CSV 檔案
+    ├── covid/
+    │   ├── ct_scan_0/
+    │   └── ...
+    └── non-covid/
+        ├── ct_scan_0/
+        └── ...
 
-## How To Inference
+# Testingset
+test/
+  ├── ct_scan_0/        # 包含 *.jpg
+  ├── ct_scan_1/
+  ├── ct_scan_2/
+  └── ...
+  ├── ct_scan_1487/
+
+precessing_test/
+  ├── filter_slice_test.csv/        # 包含 *.jpg
+  ├── filter_slice_test_dic1_05_.pickle/
+  ├── test_area_df.csv/
+  ├── test_dic1_05_.pickle/
+
+
+
+```
+
+## Quick Demo
+- Unzip the `preprocessing_test` folder, and put it in the path to fit your directory(you can reference the data structure we mention above)
+- Run `./preproceesing/inference/1-spatial removal.ipynb`, and the get `test_cropped` folder
+- Access the link[(https://drive.google.com/drive/folders/1izXmN-rRdZIiSpaZsozlLbZxah7u8L0T?usp=sharing)], and put .bin in `weights_path_list` in `inference.py`
+- Run `CUDA_VISIBLE_DEVICES=0,1 python inference.py`
 
 
 
 ## How To Train & Inference
 - Run `./preproceesing/*` folder step by step (**Note: you need to change directory & path within all file.**)
-- Then the command below:
+- Then run the command below:
 ```
 CUDA_VISIBLE_DEVICES=0,1 python train.py (for efficientNet)
 
@@ -24,8 +69,8 @@ CUDA_VISIBLE_DEVICES=0,1 python train_swin.py (for swin_transformer)
 ```
 
 - Run `./preproceesing/inference/*` step by step (**Note:you need to change directory & path within all file.**)
-- get and the weights(.bin) after training in `weights_path_list` in `inference.py`
-- Then the command below:
+- Get and the weights(.bin) after training, and put it in `weights_path_list` in `inference.py`
+- Then run the command below:
 ```
 CUDA_VISIBLE_DEVICES=0,1 python inference.py
 ```

@@ -18,7 +18,9 @@ Then you can get the virtual enviroment and packages we use
 - Run `./preproceesing/*` folder step by step (**Note: you need to change directory & path within all file.**)
 - then the command below:
 ```
-CUDA_VISIBLE_DEVICES=0,1 python train.py
+CUDA_VISIBLE_DEVICES=0,1 python train.py (for efficientNet)
+
+CUDA_VISIBLE_DEVICES=0,1 python train_swin.py (for swin_transformer)
 ```
 
 - Run `./preproceesing/inference/*` step by step (**Note:you need to change directory & path within all file.**)

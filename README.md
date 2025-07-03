@@ -10,15 +10,20 @@ pip install -r requirements.txt
 Then you can get the virtual enviroment and packages we use
 
 
-## How To Test
+## How To Inference
 
-- Run `./preproceesing/inference/*` step by step and then (you need to change directory within all file.)
-```
-CUDA_VISIBLE_DEVICES=0,1 python inference.py
-```
 
-## How To Train
-- Run `./preproceesing/*` step by step and then (you need to change directory within all file.)
+
+## How To Train & Inference
+- Run `./preproceesing/*` folder step by step (**Note: you need to change directory & path within all file.**)
+- then the command below:
 ```
 CUDA_VISIBLE_DEVICES=0,1 python train.py
+```
+
+- Run `./preproceesing/inference/*` step by step (**Note:you need to change directory & path within all file.**)
+- get and the weights(.bin) after training in `weights_path_list`
+- then the command below:
+```
+CUDA_VISIBLE_DEVICES=0,1 python inference.py
 ```
